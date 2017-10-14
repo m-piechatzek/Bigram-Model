@@ -61,7 +61,12 @@ for subdir, dirs, files in os.walk(rootdir):
             v_words.append(a)
 
         # gather all bigrams
-        # bgrms = list(nltk.bigrams(tokenized_file))
+        bgrms = list(nltk.bigrams(tokenized_file))
+        # does a comparison of the first word in the bigram to the V list
+        first_run_bgrms = list(set([b for b in bgrms if b[0] in v_words]))
+        # does a second comparison to the second word in the bigram to the V list
+        clean_bigram = list(set([b for b in first_run_bgrms if b[1] in v_words]))
+        print(clean_bigram)
 
 
         # create a VxV matrix initialized with VxV zeroes
