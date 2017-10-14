@@ -1,7 +1,10 @@
 #####################################################
 #                    COMP 4980-03                   #
-#                   FRANCESCA RAMUNNO               #
-#                      PROJECT 1                    #
+#                   MONIKA PIECHATZEK               #
+#                      PROJECT 1
+#
+# /Users/monikapiechatzek/Documents/school/tru/tru2017/fall2017/COMP498004/George Elliot/Dickenson/Project1/Gaskell
+#
 #####################################################
 
 import nltk
@@ -9,6 +12,7 @@ from nltk import FreqDist
 import os
 from tabulate import tabulate
 import testingTrivialTokenizer as tt
+import re
 
 # function to get user input for an existing directory
 def directory_input(message):
@@ -40,9 +44,13 @@ for subdir, dirs, files in os.walk(rootdir):
 
         # tokenize the file using the simplistic word tokenizer
         tokenized_file = tt.trivialTokenizer(open(rootdir + "/" + file).read())
-
+        # removes all punctuation
+        toke_clean = list([])
+        for x in tokenized_file:
+            if re.match("^[A-Za-z-]+$", x):
+                toke_clean.append(x)
         # get the plain frequency distribution from tokenized file from NLTK
-        fdist = FreqDist(tokenized_file)
+        fdist = FreqDist(toke_clean)
 
         # get the V most frequency counts
         most_common = fdist.most_common(V)
@@ -52,11 +60,11 @@ for subdir, dirs, files in os.walk(rootdir):
         for a,b in most_common:
             v_words.append(a)
 
+        # gather all bigrams
+        # bgrms = list(nltk.bigrams(tokenized_file))
+
+
         # create a VxV matrix initialized with VxV zeroes
         bigram_matrix = [[0 for i in range(0,V)] for j in range (0,V)]
 
         print_matrix(bigram_matrix, v_words)
-
-
-
-
