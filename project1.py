@@ -32,7 +32,7 @@ def print_matrix(bigram_matrix, v_words):
 rootdir = directory_input("Enter a directory path: ")
 
 # V will be used as the top V most frequency counts
-V = 4000
+V = 10
 
 # process each file in given directory
 for subdir, dirs, files in os.walk(rootdir):
@@ -61,7 +61,7 @@ for subdir, dirs, files in os.walk(rootdir):
 
         for a, b in most_common:
             v_words.append(a)
-            most_common_counts.append(b)
+        #    most_common_counts.append(b)
 
         # gather all bigrams
         bgrms = list(nltk.bigrams(tokenized_file))
@@ -101,12 +101,19 @@ for subdir, dirs, files in os.walk(rootdir):
                 j = j + 1
             i = i + 1
 
-        most_common_counts = []
+        # sum the rows to get the count to be used for probabilities
+        for row in bigram_matrix:
+            sum = 0
+            for col in row:
+                sum = sum + col
+            most_common_counts.append(sum)
 
-        for word in v_words:
-            for a,b in most_common:
-                if a == word:
-                    most_common_counts.append(b)
+        # most_common_counts = []
+
+        # for word in v_words:
+        #    for a,b in most_common:
+        #        if a == word:
+        #            most_common_counts.append(b)
 
         print('')
         print('--------------------------------------------------------------------------------------')
@@ -179,12 +186,12 @@ for subdir, dirs, files in os.walk(rootdir):
 
         probability_matrix = [[0 for i in range(0, V)] for j in range(0, V)]
 
-
+        i = 0
         for row in smoothed_bigram_counts:
-            i = 0
+            j = 0
             for col in row:
-                j = 0
-                probability_matrix[i][j] = float(format((col / most_common_counts_smoothed[i]),'.5f'))
+                probability_matrix[i][j] = float(format((col / most_common_counts_smoothed[i]),'.9f'))
+                # print("COL=", col, " UNIGRAM=", most_common_counts_smoothed[i], "i=", i, "j=",j)
                 j = j + 1
             i = i + 1
 
@@ -202,3 +209,13 @@ for subdir, dirs, files in os.walk(rootdir):
         print('--                              PERFORM A SANITY CHECK                              --')
         print('--------------------------------------------------------------------------------------')
         print('')
+
+        # get the sum of the probabilities in each row; each should be ~= 1
+        row_num = 0
+        for row in probability_matrix:
+            sum = 0
+            for col in row:
+                sum = sum + col
+            print("SUM OF PROBABILITIES IN ROW ", row_num, " = ", sum)
+            row_num = row_num + 1
+
