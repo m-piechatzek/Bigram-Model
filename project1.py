@@ -1,3 +1,4 @@
+
 #####################################################
 #                    COMP 4980-03                   #
 #                   FRANCESCA RAMUNNO               #
@@ -9,6 +10,8 @@ import os
 from tabulate import tabulate
 import testingTrivialTokenizer as tt
 import re
+import random
+import math
 import pandas as pd
 import json
 
@@ -25,14 +28,37 @@ def directory_input(message):
 # function to print a nxn matrix using tabulate
 def print_matrix(bigram_matrix, v_words):
     i = 0
+    #output_matrix = bigram_matrix[:]
+    #for row in output_matrix:
+    #    row.insert(0,v_words[i])
+    #    i = i + 1
     print(tabulate(bigram_matrix, headers=v_words, tablefmt='orgtbl'))
     print('')
+
+# function to get two sentences from text
+# by simplying dividing it in half and adding a period
+def get_two_sentences(to_read):
+    length = len(to_read)
+    sent_1_length = math.floor(length/2)
+    sent_1 = []
+    sent_2 = []
+    to_return = []
+    i = 0
+    while i < sent_1_length:
+        sent_1.append(to_read[i])
+        sent_2.append(to_read[i+sent_1_length])
+        i = i + 1
+    sent_1.append(".")
+    sent_2.append(".")
+    to_return.append(sent_1)
+    to_return.append(sent_2)
+    return to_return
 
 
 rootdir = directory_input("Enter a directory path: ")
 
 # V will be used as the top V most frequency counts
-V = 10
+V = 4000
 
 # process each file in given directory
 for subdir, dirs, files in os.walk(rootdir):
@@ -219,3 +245,148 @@ for subdir, dirs, files in os.walk(rootdir):
             print("SUM OF PROBABILITIES IN ROW ", row_num, " = ", sum)
             row_num = row_num + 1
 
+        # -- RUN REQUIRED TESTS -- #
+
+        print('')
+        print('--------------------------------------------------------------------------------------')
+        print('--                                 PERFORM TESTS                                    --')
+        print('--------------------------------------------------------------------------------------')
+        print("")
+
+        print("1) Generate some new text as in the Shannon game:")
+        total_count = 0
+
+        # get the total count to be used to calculate probabilities
+        for val in most_common_counts_smoothed:
+            total_count = total_count + val
+
+        new_text = [] # will hold the generated text
+        sum_1 = 0
+        index = 0
+
+        # decide the first word of the new text
+        # by generating a random number, and partitioning
+        # the probabilities in a roulette selection
+        # so the chance of being selected is accurate
+
+        for word in v_words:
+            sum_1 = sum_1 + (most_common_counts[index]/total_count) # will eventually add up to 1
+            rand_num = random.uniform(0,1) # random number between 0 and 1
+            if (rand_num < sum_1):
+                selected_index = index
+                break
+            index = index + 1
+        chosen_word = v_words[selected_index]
+        new_text.append(chosen_word)
+
+        # loop through and generate the next word based on the bigram probabilities,
+        # similarly using a roulette selection, so the likelihood of being selected is
+        # accurate
+
+        NUM_LOOPS = 100
+        counter = 0
+        while counter < NUM_LOOPS:
+            rand_num = 0
+            test_index = 0
+            for row in probability_matrix:
+                if test_index == selected_index: # find the row of the prefix of the bigram.
+                    j = 0
+                    sum_2 = 0
+                    new_rand_num = random.uniform(0,1) # generate a random number
+                    for col in row:
+                        if col > 0.00000001: # overlook bigrams that seem like an error
+                            sum_2 = sum_2 + col
+                            if new_rand_num < sum_2:
+                                # print("FIRST WORD = ", v_words[selected_index], "RAND NUM = ", new_rand_num, " SUM = ", sum_2, " WORD=", v_words[j])
+                                new_text.append(v_words[j])
+                                break
+                            else:
+                                j = j + 1
+                        else:
+                            j = j + 1
+                            sum_2 = sum_2 + col
+                    # this is now the prefix of the next bigram, calculate again in the loop similarly
+                    selected_index = j
+                    break
+                else:
+                    test_index = test_index + 1
+            counter = counter + 1
+
+        print('')
+        print("-- NEW TEXT --")
+        print('')
+        print(*new_text)
+        print('')
+
+        print("2) Which sentence is more probable?")
+        print("")
+        print("-- THE SENTENCES --")
+        print("")
+
+        # break the text into two sentences
+        sentences = get_two_sentences(new_text)
+        sentence_1 = sentences[0]
+        sentence_2 = sentences[1]
+        print("Sentence 1=", *sentence_1)
+        print("Sentence 2=", *sentence_2)
+        print("")
+
+        # make bigrams of each sentence.
+        # probabilities of each bigram will be summed
+
+        sent_1_bigram = list(nltk.bigrams(sentence_1))
+        sent_2_bigram = list(nltk.bigrams(sentence_2))
+
+        sent_1_prob_sum = 0
+
+        # we need the index of both words in the bigrams
+        for word1, word2 in sent_1_bigram:
+            i = 0
+            j = 0
+            index_1 = 0
+            index_2 = 0
+            for word in v_words:
+                if word != word1:
+                    i = i + 1
+                else:
+                    index_1 = i
+                if word != word2:
+                    j = j + 1
+                else:
+                    index_2 = j
+            # using the indices found, add to the probability sum
+            bigram_probability_1 = probability_matrix[index_1][index_2]
+            sent_1_prob_sum = sent_1_prob_sum + bigram_probability_1
+
+        # similarly for the other sentence
+        sent_2_prob_sum = 0
+        for word1, word2 in sent_2_bigram:
+            i = 0
+            j = 0
+            index_1 = 0
+            index_2 = 0
+            for word in v_words:
+                if word != word1:
+                    i = i + 1
+                else:
+                    index_1 = i
+                if word != word2:
+                    j = j + 1
+                else:
+                    index_2 = j
+                if word == ".":
+                    break
+            bigram_probability_2 = probability_matrix[index_1][index_2]
+            sent_2_prob_sum = sent_2_prob_sum + bigram_probability_2
+
+        print("PROBABILITY OF SENTENCE 1 = ", sent_1_prob_sum)
+        print("PROBABILITY OF SENTENCE 2 = ", sent_2_prob_sum)
+
+        # the sentence with the greater overall probability is more likely
+        if sent_1_prob_sum > sent_2_prob_sum:
+            greater_prob = "sentence 1"
+        else:
+            greater_prob = "sentence 2"
+
+        print("So", greater_prob, "is more probable in our model's vocabulary.")
+        print("")
